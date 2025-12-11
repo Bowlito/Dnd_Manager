@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+        "target": "es2020",
+        "module": "esnext",
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "strict": true,
+        "outDir": "./dist",
+        "rootDir": "./"
+    },
+    "ts-node": {
+        "esm": true
+    },
+    "include": ["**/*.ts"], // <--- ON FORCE LA RECHERCHE DES FICHIERS TS
+    "exclude": ["node_modules"] // <--- ON IGNORE LES MODULES
+}
