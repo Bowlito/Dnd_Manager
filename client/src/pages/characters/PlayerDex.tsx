@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useSnackbar } from "notistack";
 import api from "../../api/axios";
 import type { ICharacter } from "../../types/characterType";
 import { useAuth } from "../../contexts/authContext";
@@ -14,8 +15,7 @@ export default function PlayerDex() {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
     const { isAuthenticated } = useAuth();
-
-    // Chargement
+    const { enqueueSnackbar } = useSnackbar();
 
     const fetchChars = async () => {
         try {
@@ -27,11 +27,11 @@ export default function PlayerDex() {
             setLoading(false);
         }
     };
+
     useEffect(() => {
         fetchChars();
     }, []);
 
-    // Helper pour déterminer la couleur (Variante)
     const getVariant = (classe: string) => {
         const cls = classe.toLowerCase();
         if (cls.includes("guerrier") || cls.includes("barbare")) return "red";
@@ -57,46 +57,51 @@ export default function PlayerDex() {
         return "slate";
     };
 
-    //Ajouter au combat
-
-    const addToCombat = async (char: ICharacter, e: React.MouseEvent) => {
+    const toggleDeployment = async (char: ICharacter, e: React.MouseEvent) => {
         e.stopPropagation();
+
+        const newState = !char.est_actif;
+
+        // Optimistic Update
+        setCharacters((prev) =>
+            prev.map((c) =>
+                c._id === char._id ? { ...c, est_actif: newState } : c
+            )
+        );
+
         try {
-            // 1. On met à jour la DB
-            await api.patch(`/characters/${char._id}`, { est_actif: true });
+            await api.patch(`/characters/${char._id}`, { est_actif: newState });
 
-            // 2. Feedback visuel (Optionnel : on peut afficher une notif ou changer le bouton)
-            alert(`${char.nom} a rejoint le combat !`);
-            fetchChars();
-
-            // Optionnel : Si tu veux rediriger direct vers le dashboard
-            // navigate('/');
+            if (newState) {
+                enqueueSnackbar(`${char.nom} rejoint la table !`, {
+                    variant: "success",
+                    autoHideDuration: 2000,
+                });
+            } else {
+                enqueueSnackbar(`${char.nom} retourne en réserve.`, {
+                    variant: "info",
+                    autoHideDuration: 2000,
+                });
+            }
         } catch (error) {
             console.error(error);
+            enqueueSnackbar("Erreur de synchronisation", { variant: "error" });
+            setCharacters((prev) =>
+                prev.map((c) =>
+                    c._id === char._id ? { ...c, est_actif: !newState } : c
+                )
+            );
         }
     };
 
-    const removeFromCombat = async (char: ICharacter, e: React.MouseEvent) => {
-        e.stopPropagation();
-        try {
-            await api.patch(`/characters/${char._id}`, { est_actif: false });
-            alert(`${char.nom} quitte le combat !`);
-            fetchChars();
-        } catch (error) {
-            console.error(error);
-        }
-    };
-
-    // Suppression
     const handleDelete = async (id: string, e: React.MouseEvent) => {
-        e.stopPropagation(); // Important : empêche d'ouvrir la fiche quand on clique sur supprimer
-
+        e.stopPropagation();
         if (!window.confirm("Supprimer ce héros définitivement ?")) return;
 
         try {
             await api.delete(`/characters/${id}`);
-            // On met à jour l'état local pour le faire disparaître tout de suite
             setCharacters((prev) => prev.filter((c) => c._id !== id));
+            enqueueSnackbar("Héros supprimé.", { variant: "warning" });
         } catch (error) {
             console.error(error);
         }
@@ -109,7 +114,6 @@ export default function PlayerDex() {
 
     return (
         <div>
-            {/* 1. En-tête Standardisé */}
             <PageHeader
                 title="PlayerDex"
                 subtitle="Bibliothèque des Héros"
@@ -124,7 +128,6 @@ export default function PlayerDex() {
                 }
             />
 
-            {/* 2. Grille de Cartes */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {characters.length === 0 && (
                     <div className="col-span-full text-center py-20 border-2 border-dashed border-slate-800 rounded-xl text-slate-500">
@@ -137,14 +140,9 @@ export default function PlayerDex() {
                         key={char._id}
                         title={char.nom}
                         subtitle={`${char.race} • ${char.classe}`}
-                        variant={getVariant(char.classe)} // Couleur dynamique
-                        // On passe les stats
+                        variant={getVariant(char.classe)}
                         stats={[
-                            {
-                                label: "Armure",
-                                value: char.stats.ca,
-                                icon: "🛡️",
-                            },
+                            { label: "CA", value: char.stats.ca, icon: "🛡️" },
                             {
                                 label: "Init",
                                 value:
@@ -160,46 +158,46 @@ export default function PlayerDex() {
                                 color: "text-purple-400",
                             },
                         ]}
-                        // On passe la barre de vie
                         bar={{
                             current: char.stats.pv_actuel,
                             max: char.stats.pv_max,
                             label: "Points de Vie",
                         }}
                         onClick={() => navigate(`/character/${char._id}`)}
-                        // On configure les boutons spécifiques à cette page
                         actions={
                             isAuthenticated ? (
                                 <>
-                                    {/* Bouton pour ajouter au combat (Futur Dashboard) */}
-                                    {!char.est_actif ? (
-                                        <Button
-                                            variant="secondary"
-                                            className="text-xs px-2 py-1"
-                                            onClick={(e) =>
-                                                addToCombat(char, e)
-                                            }
-                                        >
-                                            ⚔️ Combat
-                                        </Button>
-                                    ) : (
-                                        <Button
-                                            variant="secondary"
-                                            className="text-xs px-2 py-1"
-                                            onClick={(e) =>
-                                                removeFromCombat(char, e)
-                                            }
-                                        >
-                                            🏃 Retirer
-                                        </Button>
-                                    )}
-                                    {/* Bouton Supprimer */}
                                     <Button
-                                        variant="danger"
-                                        className="text-xs"
+                                        variant="secondary"
+                                        className={`text-xs px-3 py-1 flex-1 transition-all duration-300 font-bold flex items-center justify-center gap-2 ${
+                                            char.est_actif
+                                                ? // Fond sombre + Bordure Orange + Texte Blanc
+                                                  "bg-slate-900 border border-[#F59E09] text-white shadow-[0_0_10px_rgba(245,158,9,0.2)]"
+                                                : "bg-slate-800 text-slate-500 border border-transparent hover:bg-slate-700"
+                                        }`}
+                                        onClick={(e) =>
+                                            toggleDeployment(char, e)
+                                        }
+                                    >
+                                        {/* 👇 ICI : La pastille CSS qui remplace l'emoji */}
+                                        <span
+                                            className={`w-2.5 h-2.5 rounded-full shadow-[0_0_5px_currentColor] ${
+                                                char.est_actif
+                                                    ? "bg-[#F59E09]"
+                                                    : "bg-slate-500"
+                                            }`}
+                                        ></span>
+
+                                        {char.est_actif ? "DÉPLOYÉ" : "RÉSERVE"}
+                                    </Button>
+
+                                    <Button
+                                        variant="ghost"
+                                        className="text-xs text-slate-600 hover:text-red-500 px-2"
                                         onClick={(e) =>
                                             handleDelete(char._id, e)
                                         }
+                                        title="Supprimer définitivement"
                                     >
                                         🗑️
                                     </Button>

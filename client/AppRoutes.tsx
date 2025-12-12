@@ -10,11 +10,12 @@ import CharacterSheet from "./src/pages/characters/CharacterSheet";
 import Bestiary from "./src/pages/monsters/Bestiary";
 import MonsterSheet from "./src/pages/monsters/MonsterSheet";
 import Login from "./src/pages/Auth/Login";
+import NpcDirectory from "./src/pages/npcs/npcDirectory";
+import NpcSheet from "./src/pages/npcs/NpcSheet";
+import NpcCreate from "./src/pages/npcs/NpcCreate";
 import { ProtectedRoute } from "./src/components/layout/ProtectedRoute";
 
 // Placeholders pour les futures pages
-
-const NPCs = () => <div className="text-white">🚧 PNJ en construction</div>;
 
 const AppRoutes = () => {
     return (
@@ -29,16 +30,18 @@ const AppRoutes = () => {
                 {/* 3. Les Répertoires */}
                 <Route path="/playerdex" element={<PlayerDex />} />
                 <Route path="/bestiary" element={<Bestiary />} />
-                <Route path="/npcs" element={<NPCs />} />
+                <Route path="/npcs" element={<NpcDirectory />} />
 
                 {/* 4. Actions Spécifiques */}
                 {/* Note : On garde la création et la fiche DANS le layout, ou on les sort ? 
             Souvent, on préfère les garder DANS le layout pour avoir le menu. */}
                 <Route element={<ProtectedRoute />}>
                     <Route path="/create" element={<CharacterCreate />} />
+                    <Route path="/npcs/create" element={<NpcCreate />} />
                 </Route>
                 <Route path="/character/:id" element={<CharacterSheet />} />
                 <Route path="/monster/:id" element={<MonsterSheet />} />
+                <Route path="/npc/:id" element={<NpcSheet />} />
             </Route>
         </Routes>
     );

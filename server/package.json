@@ -5,7 +5,10 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "tsx watch index.ts"
+    "dev": "tsx watch index.ts",
+    "seed:char": "tsx seeds/characterSeed.ts",
+    "seed:mob": "tsx seeds/monsterSeed.ts",
+    "seed:npc": "tsx seeds/npcSeed.ts"
   },
   "keywords": [],
   "author": "",

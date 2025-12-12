@@ -6,6 +6,7 @@ import characterRoutes from "./routes/characterRoute.js";
 import optionsRoutes from "./routes/optionsRoute.js";
 import monsterRoutes from "./routes/monsterRoute.js";
 import authRoutes from "./routes/auth.route.js";
+import npcRoutes from "./routes/npcRoute.js";
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use("/api/characters", characterRoutes);
 app.use("/api/options", optionsRoutes);
 app.use("/api/monsters", monsterRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/npcs", npcRoutes);
 
 app.listen(PORT, () => {
     console.log(`Serveur lancé sur http://localhost:${PORT}`);
